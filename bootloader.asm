@@ -24,12 +24,12 @@ start:
     mov cl, 2        ; Sector 2 (sector 1 is the bootloader)
     mov dl, [boot_drive] ; Boot drive number (saved from DL)
     mov ah, 0x02     ; BIOS read sectors function
-    mov al, 1        ; Read 1 sector (512 bytes)
+    mov al, 3        ; Read 3 sectors (1536 bytes)
     int 0x13         ; BIOS disk interrupt
     jc disk_error    ; If error (carry flag set), jump to error handler
 
     ; Jump to the loaded kernel at 0x9000.
-    jmp 0x0000:0x9000  ; Far jump: segment=0, offset=0x9000
+    jmp 0x900:0x0000    ; Jump CS=0x900 and IP=0x0000 point to start_kernel.
 
 disk_error:
     ; On disk error, display an error message and halt.
