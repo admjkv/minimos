@@ -2,5 +2,6 @@ bootloader.bin
 kernel.bin
 os.img
 bootx64.obj
+bootx64.o
 BOOTx64.EFI
 build
