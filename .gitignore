@@ -7,3 +7,4 @@ BOOTx64.EFI
 build
 efi-dir
 efi_dir
+OVMF_VARS.fd
