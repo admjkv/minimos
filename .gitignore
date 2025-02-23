@@ -5,3 +5,5 @@ bootx64.obj
 bootx64.o
 BOOTx64.EFI
 build
+efi-dir
+efi_dir
