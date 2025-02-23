@@ -12,7 +12,10 @@ cp /usr/share/edk2/x64/OVMF_VARS.4m.fd OVMF_VARS.fd
 
 qemu-system-x86_64 \
   -accel kvm \
-  -machine q35 \
+  -cpu host \
+  -m 512M \
+  -smp 1 \
+  -machine pc \
   -serial stdio \
   -display none \
   \
