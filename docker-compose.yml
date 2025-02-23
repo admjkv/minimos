@@ -1,0 +1,12 @@
+services:
+  minimos:
+    build: .
+    container_name: uefi_minimos_dev
+    volumes:
+      - .:/minimos
+    devices:
+      - /dev/kvm:/dev/kvm
+    security_opt:
+      - seccomp=unconfined
+    stdin_open: true
+    tty: true
