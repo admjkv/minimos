@@ -1,7 +1,7 @@
 FROM archlinux:base
 
-RUN pacman -Syu --noconfirm
-RUN pacman -S --noconfirm nasm lld qemu-base edk2-ovmf
+RUN pacman -Syu --noconfirm && \
+    pacman -S --noconfirm nasm lld qemu-full edk2-ovmf
 
 WORKDIR /minimos
 
