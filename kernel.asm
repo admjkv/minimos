@@ -5,10 +5,12 @@
 [org 0x9000]           ; Specify load address (matches bootloader jump target)
 
 start_kernel:
-    ; Initialize data segments.
-    xor ax, ax
+    ; Set up segments
+    mov ax, 0x900       ; Set up data segment (DS=0x9000)
     mov ds, ax
     mov es, ax
+    mov ss, ax
+    lea sp, [stack_top] ; Set stack pointer to top of stack
 
     ; Print the "Hello, World!" message.
     mov si, msg_hello
@@ -96,10 +98,16 @@ shutdown:
 ; -----------------------------------------------------------
 ; Data Section
 ; -----------------------------------------------------------
-msg_hello:    db "Hello, World!", 0x0D, 0x0A, 0
+msg_hello:    db "Welcome to MinimOS", 0x0D, 0x0A, 0
 msg_prompt:   db "Enter your message: ", 0
 msg_shutdown: db " Shutting down...", 0x0D, 0x0A, 0
 newline:      db 0x0D, 0x0A, 0
 
 ; Buffer for storing user input (128 bytes maximum).
 input_buffer: times 128 db 0
+
+; -------------------------------
+; Reserved Stack Space (1KB)
+; -------------------------------
+stack_space: times 1024 db 0
+stack_top:
