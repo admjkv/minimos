@@ -215,12 +215,17 @@ ReadLine:
     je    .next_char
     dec   rcx
     mov   byte [rdi + rcx], 0
-    mov   r8, [rax + EFI_SYSTEM_TABLE_ConOut]
+    push  rax                                    ; Save character
+    mov   rax, [SystemTablePtr]                 ; Get system table
+    mov   r8, [rax + EFI_SYSTEM_TABLE_ConOut]   ; Get ConOut
     mov   rcx, r8
+    push  rdi                                   ; Save input buffer pointer
     mov   rdi, BkspStr
     call  ConvertAsciiToUtf16
     mov   rdx, rax
     call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    pop   rdi                                   ; Restore input buffer pointer
+    pop   rax                                   ; Restore character
     jmp   .next_char
 
 .done:
