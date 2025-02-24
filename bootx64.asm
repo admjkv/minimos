@@ -200,10 +200,13 @@ ReadLine:
     ; Echo typed char
     mov   [CharBuf], ax
     mov   word [CharBuf + 2], 0
-    mov   r8, [rax + EFI_SYSTEM_TABLE_ConOut]
+    push  rax                                    ; Save character
+    mov   rax, [SystemTablePtr]                 ; Get system table
+    mov   r8, [rax + EFI_SYSTEM_TABLE_ConOut]   ; Get ConOut
     mov   rcx, r8
     mov   rdx, CharBuf
     call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    pop   rax                                    ; Restore character
 .loop:
     jmp   .next_char
 
@@ -292,12 +295,12 @@ ConvertAsciiToUtf16:
     push  rbx
     mov   rbx, WideBuf
 .cloop:
-    mov   al, [rdi]
-    mov   [rbx], ax
+    movzx eax, byte [rdi]    ; Zero extend the byte to 32 bits
+    mov   word [rbx], ax     ; Store as UTF-16LE (low byte first)
     cmp   al, 0
     je    .done
-    add   rbx, 2
-    inc   rdi
+    add   rbx, 2            ; Move to next UTF-16 position
+    inc   rdi              ; Move to next ASCII char
     jmp   .cloop
 .done:
     mov   rax, WideBuf
