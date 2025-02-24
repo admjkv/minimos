@@ -16,7 +16,8 @@ qemu-system-x86_64 \
   -m 512M \
   -smp 1 \
   -machine pc \
-  -display curses \
+  -display none \
+  -serial stdio \
   \
   -drive if=pflash,format=raw,readonly=on,file=/usr/share/edk2/x64/OVMF_CODE.4m.fd \
   -drive if=pflash,format=raw,file=OVMF_VARS.fd \
