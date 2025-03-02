@@ -1,4 +1,4 @@
-; bootx64.asm - Minimal UEFI x86_64 example (PE+).
+; bootx64.asm
 
 [bits 64]
 %include "uefi.inc"
@@ -7,7 +7,7 @@ section .text align=16
 global _start
 
 _start:
-    and   rsp, -16               ; <-- stack alignment fix
+    and   rsp, -16
     mov   [OurImageHandle], rcx
     mov   [SystemTablePtr], rdx
 
@@ -98,7 +98,6 @@ ParseCommand:
     mov   rax, [SystemTablePtr]
     mov   r8,  [rax + EFI_SYSTEM_TABLE_ConOut]
     mov   rcx, r8
-    ; rdi points to remainder of line -> convert -> print
     call  ConvertAsciiToUtf16
     mov   rdx, rax
     call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
@@ -169,11 +168,13 @@ FakeLoadAndStartImage:
 ; -------------------------------------------------------
 ReadLine:
     push  rbx
-    xor   rcx, rcx
+    push  r12
+    xor   r12, r12
     mov   rax, [SystemTablePtr]
     mov   rbx, [rax + EFI_SYSTEM_TABLE_ConIn]
 .next_char:
     ; WaitForEvent(1, &ConIn->WaitForKey, &WaitIndex)
+    mov   rax, [SystemTablePtr]                  ; Reload system table pointer
     mov   rdx, [rax + EFI_SYSTEM_TABLE_BootServices]
     mov   r11, [rdx + EFI_BOOT_SERVICES_WaitForEvent]
     mov   rcx, 1
@@ -192,44 +193,45 @@ ReadLine:
     cmp   ax, 0x08             ; Backspace?
     je    .backspace
 
-    cmp   rcx, 127
+    cmp   r12, 127
     jae   .loop
-    mov   [rdi + rcx], al
-    inc   rcx
+    mov   [rdi + r12], al
+    inc   r12
 
     ; Echo typed char
     mov   [CharBuf], ax
     mov   word [CharBuf + 2], 0
-    push  rax                                    ; Save character
-    mov   rax, [SystemTablePtr]                 ; Get system table
-    mov   r8, [rax + EFI_SYSTEM_TABLE_ConOut]   ; Get ConOut
+    push  rax
+    mov   rax, [SystemTablePtr]
+    mov   r8, [rax + EFI_SYSTEM_TABLE_ConOut]
     mov   rcx, r8
     mov   rdx, CharBuf
     call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
-    pop   rax                                    ; Restore character
+    pop   rax
 .loop:
     jmp   .next_char
 
 .backspace:
-    cmp   rcx, 0
+    cmp   r12, 0
     je    .next_char
-    dec   rcx
-    mov   byte [rdi + rcx], 0
-    push  rax                                    ; Save character
-    mov   rax, [SystemTablePtr]                 ; Get system table
-    mov   r8, [rax + EFI_SYSTEM_TABLE_ConOut]   ; Get ConOut
+    dec   r12
+    mov   byte [rdi + r12], 0
+    push  rax
+    mov   rax, [SystemTablePtr]
+    mov   r8, [rax + EFI_SYSTEM_TABLE_ConOut]
     mov   rcx, r8
-    push  rdi                                   ; Save input buffer pointer
+    push  rdi
     mov   rdi, BkspStr
     call  ConvertAsciiToUtf16
     mov   rdx, rax
     call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
-    pop   rdi                                   ; Restore input buffer pointer
-    pop   rax                                   ; Restore character
+    pop   rdi
+    pop   rax
     jmp   .next_char
 
 .done:
-    mov   byte [rdi + rcx], 0
+    mov   byte [rdi + r12], 0
+    pop   r12
     pop   rbx
     ret
 
@@ -300,12 +302,12 @@ ConvertAsciiToUtf16:
     push  rbx
     mov   rbx, WideBuf
 .cloop:
-    movzx eax, byte [rdi]    ; Zero extend the byte to 32 bits
-    mov   word [rbx], ax     ; Store as UTF-16LE (low byte first)
+    movzx eax, byte [rdi]
+    mov   word [rbx], ax
     cmp   al, 0
     je    .done
-    add   rbx, 2            ; Move to next UTF-16 position
-    inc   rdi              ; Move to next ASCII char
+    add   rbx, 2
+    inc   rdi
     jmp   .cloop
 .done:
     mov   rax, WideBuf
@@ -321,8 +323,8 @@ section .data align=8
 OurImageHandle  dq 0
 SystemTablePtr  dq 0
 
-WelcomeStr      db "Welcome to Tiny UEFI kernel (assembly)!",0
-PromptStr       db 13,10,"uefi-os> ",0
+WelcomeStr      db "Welcome to MinimOS! It works!",0
+PromptStr       db 13,10,"[minimos]$ ",0
 UnknownCmdStr   db "Unknown command.",13,10,0
 RunningStr      db "Running ",0
 CRLF            db 13,10,0
