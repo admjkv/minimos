@@ -61,7 +61,7 @@ ParseCommand:
     push  rdi
     mov   rsi, CMD_ECHO
     call  StrCmpToken
-    add   rsp, 8
+    pop   rdi
     cmp   rax, 0
     je    .do_echo
 
@@ -69,7 +69,7 @@ ParseCommand:
     push  rdi
     mov   rsi, CMD_REBOOT
     call  StrCmpToken
-    add   rsp, 8
+    pop   rdi
     cmp   rax, 0
     je    .do_reboot
 
@@ -77,7 +77,7 @@ ParseCommand:
     push  rdi
     mov   rsi, CMD_RUN
     call  StrCmpToken
-    add   rsp, 8
+    pop   rdi
     cmp   rax, 0
     je    .do_run
 
