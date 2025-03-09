@@ -27,6 +27,9 @@ _start:
     call  ConvertAsciiToUtf16
     mov   rdx, rax
     call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    ; Check for error
+    test  rax, rax
+    js    ErrorHandler
 
     jmp   MainLoop
 
@@ -39,6 +42,9 @@ MainLoop:
     call  ConvertAsciiToUtf16
     mov   rdx, rax
     call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    ; Check for error
+    test  rax, rax
+    js    ErrorHandler
 
     ; Read line -> parse
     mov   rdi, InputBuffer
@@ -52,6 +58,9 @@ MainLoop:
     call  ConvertAsciiToUtf16
     mov   rdx, rax
     call  [rcx + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    ; Check for error
+    test  rax, rax
+    js    ErrorHandler
 .done:
     jmp   MainLoop
 
@@ -118,11 +127,17 @@ ParseCommand:
     call  ConvertAsciiToUtf16
     mov   rdx, rax
     call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    ; Check for error
+    test  rax, rax
+    js    ErrorHandler
     ; newline
     mov   rdi, CRLF
     call  ConvertAsciiToUtf16
     mov   rdx, rax
     call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    ; Check for error
+    test  rax, rax
+    js    ErrorHandler
     xor   rax, rax
     pop   rbx
     ret
@@ -159,6 +174,9 @@ ParseCommand:
     call  ConvertAsciiToUtf16
     mov   rdx, rax
     call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    ; Check for error
+    test  rax, rax
+    js    ErrorHandler
     xor   rax, rax
     pop   rbx
     ret
@@ -177,18 +195,27 @@ FakeLoadAndStartImage:
     call  ConvertAsciiToUtf16
     mov   rdx, rax
     call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    ; Check for error
+    test  rax, rax
+    js    ErrorHandler
 
     ; Print filename user typed
     mov   rdi, rdi
     call  ConvertAsciiToUtf16
     mov   rdx, rax
     call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    ; Check for error
+    test  rax, rax
+    js    ErrorHandler
 
     ; Newline
     mov   rdi, CRLF
     call  ConvertAsciiToUtf16
     mov   rdx, rax
     call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    ; Check for error
+    test  rax, rax
+    js    ErrorHandler
     ret
 
 
@@ -236,6 +263,9 @@ ReadLine:
     mov   rcx, r8
     mov   rdx, CharBuf
     call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    ; Check for error
+    test  rax, rax
+    js    ErrorHandler
     pop   rax
 .loop:
     jmp   .next_char
@@ -254,6 +284,9 @@ ReadLine:
     call  ConvertAsciiToUtf16
     mov   rdx, rax
     call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    ; Check for error
+    test  rax, rax
+    js    ErrorHandler
     pop   rdi
     pop   rax
     jmp   .next_char
