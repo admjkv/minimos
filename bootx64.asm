@@ -90,6 +90,14 @@ ParseCommand:
     cmp   rax, 0
     je    .do_run
 
+    ; Compare with "help"
+    push  rdi
+    mov   rsi, CMD_HELP
+    call  StrCmpToken
+    pop   rdi
+    cmp   rax, 0
+    je    .do_help
+
     ; Unrecognized
     mov   rax, [SystemTablePtr]
     mov   rax, [rax + EFI_SYSTEM_TABLE_ConOut]
@@ -139,6 +147,18 @@ ParseCommand:
     je    .done_run
     call  FakeLoadAndStartImage
 .done_run:
+    xor   rax, rax
+    pop   rbx
+    ret
+
+.do_help:
+    mov   rax, [SystemTablePtr]
+    mov   r8,  [rax + EFI_SYSTEM_TABLE_ConOut]
+    mov   rcx, r8
+    mov   rdi, HelpText
+    call  ConvertAsciiToUtf16
+    mov   rdx, rax
+    call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
     xor   rax, rax
     pop   rbx
     ret
@@ -342,10 +362,17 @@ BkspStr         db 8,' ',8,0
 CMD_ECHO        db "echo",0
 CMD_REBOOT      db "reboot",0
 CMD_RUN         db "run",0
+CMD_HELP        db "help",0
 
 InputBuffer     times 128 db 0
 CharBuf         times 4   db 0
 KeyDataBuf      times 4   db 0
+
+HelpText db "Available commands:",13,10
+         db "  help   - Show this help",13,10
+         db "  echo   - Display text",13,10
+         db "  reboot - Restart system",13,10
+         db "  run    - Execute program",13,10,0
 
 section .bss align=8
 WideBuf   resb 1024
