@@ -14,6 +14,15 @@ _start:
     mov   rax, [SystemTablePtr]
     mov   r8,  [rax + EFI_SYSTEM_TABLE_ConOut]
     mov   rcx, r8
+    mov   rdx, 0  ; Clear screen
+    call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_ClearScreen]
+    
+    ; Set color
+    mov   rcx, r8
+    mov   rdx, EFI_LIGHTGREEN | (EFI_BLACK << 4)  ; Light green on black
+    call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_SetAttribute]
+
+    mov   rcx, r8
     mov   rdi, WelcomeStr
     call  ConvertAsciiToUtf16
     mov   rdx, rax
