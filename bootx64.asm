@@ -209,8 +209,18 @@ ParseCommand:
     call  SkipToken
     call  SkipSpaces
     cmp   byte [rdi], 0
-    je    .done_run
+    je    .run_error
     call  FakeLoadAndStartImage
+    jmp   .done_run
+    
+.run_error:
+    mov   rax, [SystemTablePtr]
+    mov   r8,  [rax + EFI_SYSTEM_TABLE_ConOut]
+    mov   rcx, r8
+    mov   rdi, RunErrorStr
+    call  ConvertAsciiToUtf16
+    mov   rdx, rax
+    call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
 .done_run:
     xor   rax, rax
     pop   rbx
@@ -739,6 +749,8 @@ HelpText db "Available commands:",13,10
          db "  clear  - Clear the screen",13,10
          db "  reboot - Restart system",13,10
          db "  run    - Execute program",13,10,0
+
+RunErrorStr     db "Error: Missing program name",13,10,0
 
 section .bss align=8
 WideBuf   resb 1024
