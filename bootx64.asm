@@ -309,6 +309,8 @@ ReadLine:
     je    .done
     cmp   ax, 0x08             ; Backspace?
     je    .backspace
+    cmp   ax, 0x09             ; Tab?
+    je    .tab_completion
     cmp   ax, 0x0000             ; Check for special keys
     je    .special_key
 
@@ -353,6 +355,41 @@ ReadLine:
     pop   rdi
     pop   rax
     jmp   .next_char
+
+.tab_completion:
+    ; Save current position
+    push  r12
+    push  rdi
+    
+    ; Get current input
+    mov   byte [rdi + r12], 0
+    
+    ; Try to complete a command
+    call  AttemptCompletion
+    
+    ; rax now has new string length if completion successful
+    cmp   rax, 0
+    je    .no_completion
+    
+    ; Display the completion
+    mov   r12, rax
+    mov   rax, [SystemTablePtr]
+    mov   r8,  [rax + EFI_SYSTEM_TABLE_ConOut]
+    mov   rcx, r8
+    
+    ; Clear current line first
+    call  ClearCurrentLine
+    
+    ; Display completed command
+    mov   rdi, InputBuffer
+    call  ConvertAsciiToUtf16
+    mov   rdx, rax
+    call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    
+.no_completion:
+    pop   rdi
+    pop   r12
+    jmp   .loop
 
 .special_key:
     ; Check scan code for up/down arrows
@@ -521,6 +558,149 @@ ConvertAsciiToUtf16:
     jmp   .cloop
 .done:
     mov   rax, WideBuf
+    pop   rbx
+    ret
+
+
+; -------------------------------------------------------
+; AttemptCompletion
+; -------------------------------------------------------
+AttemptCompletion:
+    push  rbx
+    push  rcx
+    push  rdx
+    push  rsi
+    
+    mov   rsi, InputBuffer
+    xor   rcx, rcx  ; command length
+    
+    ; Measure input length
+.length_loop:
+    cmp   byte [rsi + rcx], 0
+    je    .check_commands
+    inc   rcx
+    jmp   .length_loop
+    
+.check_commands:
+    test  rcx, rcx
+    jz    .no_match  ; Empty input, can't complete
+    
+    ; Check each command
+    mov   rdx, CMD_ECHO
+    call  TryComplete
+    cmp   rax, 1
+    je    .found_completion
+    
+    mov   rdx, CMD_REBOOT
+    call  TryComplete
+    cmp   rax, 1
+    je    .found_completion
+    
+    mov   rdx, CMD_RUN
+    call  TryComplete
+    cmp   rax, 1
+    je    .found_completion
+    
+    mov   rdx, CMD_HELP
+    call  TryComplete
+    cmp   rax, 1
+    je    .found_completion
+    
+    mov   rdx, CMD_CLEAR
+    call  TryComplete
+    cmp   rax, 1
+    je    .found_completion
+    
+.no_match:
+    xor   rax, rax
+    pop   rsi
+    pop   rdx
+    pop   rcx
+    pop   rbx
+    ret
+    
+.found_completion:
+    ; rax contains the length of the completed string
+    pop   rsi
+    pop   rdx
+    pop   rcx
+    pop   rbx
+    ret
+
+; TryComplete: Tries to complete InputBuffer with command in rdx
+; Returns 1 in rax if completed, 0 if no match
+; Also returns completed string length in rax if successful
+TryComplete:
+    push  rbx
+    push  rcx
+    push  rdx
+    push  rsi
+    push  rdi
+    
+    mov   rsi, InputBuffer
+    mov   rdi, rdx
+    
+    ; Compare prefix
+.compare_loop:
+    mov   al, [rsi]
+    mov   bl, [rdi]
+    test  al, al
+    jz    .prefix_match
+    cmp   al, bl
+    jne   .no_match
+    inc   rsi
+    inc   rdi
+    jmp   .compare_loop
+    
+.prefix_match:
+    ; Prefix matches, complete command
+    mov   rsi, rdx    ; Source is original command
+    mov   rdi, InputBuffer
+    
+.copy_loop:
+    mov   al, [rsi]
+    mov   [rdi], al
+    inc   rsi
+    inc   rdi
+    test  al, al
+    jnz   .copy_loop
+    
+    ; Measure final length
+    mov   rdi, InputBuffer
+    xor   rax, rax
+.measure_loop:
+    cmp   byte [rdi + rax], 0
+    je    .done
+    inc   rax
+    jmp   .measure_loop
+    
+.done:
+    mov   rax, 1      ; Success flag (overwritten with length below)
+    pop   rdi
+    
+    ; Get final string length
+    mov   rsi, InputBuffer
+    xor   rcx, rcx
+.final_length:
+    cmp   byte [rsi + rcx], 0
+    je    .return_length
+    inc   rcx
+    jmp   .final_length
+    
+.return_length:
+    mov   rax, rcx    ; Return length
+    pop   rsi
+    pop   rdx
+    pop   rcx
+    pop   rbx
+    ret
+    
+.no_match:
+    xor   rax, rax
+    pop   rdi
+    pop   rsi
+    pop   rdx
+    pop   rcx
     pop   rbx
     ret
 
