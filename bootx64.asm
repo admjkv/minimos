@@ -228,6 +228,7 @@ ReadLine:
     xor   r12, r12
     mov   rax, [SystemTablePtr]
     mov   rbx, [rax + EFI_SYSTEM_TABLE_ConIn]
+    mov   byte [CmdHistoryIndex], 0  ; Reset history index
 .next_char:
     ; WaitForEvent(1, &ConIn->WaitForKey, &WaitIndex)
     mov   rax, [SystemTablePtr]                  ; Reload system table pointer
@@ -248,6 +249,8 @@ ReadLine:
     je    .done
     cmp   ax, 0x08             ; Backspace?
     je    .backspace
+    cmp   ax, 0x0000             ; Check for special keys
+    je    .special_key
 
     cmp   r12, 127
     jae   .loop
@@ -290,6 +293,58 @@ ReadLine:
     pop   rdi
     pop   rax
     jmp   .next_char
+
+.special_key:
+    ; Check scan code for up/down arrows
+    mov   al, [KeyDataBuf]       ; ScanCode
+    cmp   al, 0x01               ; Up arrow
+    je    .history_up
+    cmp   al, 0x02               ; Down arrow
+    je    .history_down
+    jmp   .loop
+
+.history_up:
+    ; Check if we have history and can go back
+    movzx rax, byte [CmdHistoryIndex]
+    cmp   rax, byte [CmdHistoryCount]
+    jae   .loop
+    ; Clear current line
+    call  ClearCurrentLine
+    ; Get history entry
+    inc   byte [CmdHistoryIndex]
+    movzx rax, byte [CmdHistoryIndex]
+    dec   rax
+    imul  rax, 128
+    lea   rsi, [CmdHistory + rax]
+    mov   rdi, InputBuffer
+    call  CopyString
+    mov   r12, rax               ; Length of copied string
+    ; Display the history entry
+    mov   rcx, [SystemTablePtr]
+    mov   rcx, [rcx + EFI_SYSTEM_TABLE_ConOut]
+    mov   rdi, InputBuffer
+    call  ConvertAsciiToUtf16
+    mov   rdx, rax
+    call  [rcx + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    jmp   .loop
+
+.history_down:
+    ; Check if we have history to navigate downward
+    cmp   byte [CmdHistoryIndex], 0
+    je    .clear_line
+    dec   byte [CmdHistoryIndex]
+    cmp   byte [CmdHistoryIndex], 0
+    jne   .history_up
+.clear_line:
+    ; Clear line and input buffer
+    call  ClearCurrentLine
+    mov   rdi, InputBuffer
+    mov   rcx, 128
+    xor   al, al
+    rep   stosb
+    mov   rdi, InputBuffer
+    xor   r12, r12
+    jmp   .loop
 
 .done:
     mov   byte [rdi + r12], 0
@@ -356,6 +411,39 @@ SkipToken:
 .done:
     ret
 
+; Copies string from [rsi] to [rdi], returns length in rax
+CopyString:
+    push  rcx
+    xor   rcx, rcx
+.copy_loop:
+    mov   al, [rsi + rcx]
+    mov   [rdi + rcx], al
+    inc   rcx
+    test  al, al
+    jnz   .copy_loop
+    dec   rcx        ; Don't count null terminator
+    mov   rax, rcx
+    pop   rcx
+    ret
+
+; Clears the current command line
+ClearCurrentLine:
+    push  rax
+    push  rcx
+    push  rdx
+    push  rdi
+    mov   rax, [SystemTablePtr]
+    mov   rcx, [rax + EFI_SYSTEM_TABLE_ConOut]
+    mov   rdi, PromptStr
+    call  ConvertAsciiToUtf16
+    mov   rdx, rax
+    call  [rcx + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
+    pop   rdi
+    pop   rdx
+    pop   rcx
+    pop   rax
+    ret
+
 ; -------------------------------------------------------
 ; ConvertAsciiToUtf16
 ;   rdi -> ASCII string, returns rax -> wide buffer
@@ -400,6 +488,9 @@ CMD_HELP        db "help",0
 InputBuffer     times 128 db 0
 CharBuf         times 4   db 0
 KeyDataBuf      times 4   db 0
+CmdHistory      times 5*128 db 0  ; Store last 5 commands
+CmdHistoryCount db 0
+CmdHistoryIndex db 0
 
 HelpText db "Available commands:",13,10
          db "  help   - Show this help",13,10
