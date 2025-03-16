@@ -141,6 +141,14 @@ ParseCommand:
     cmp   rax, 0
     je    .do_run
 
+    ; Compare with "clear"
+    push  rdi
+    mov   rsi, CMD_CLEAR
+    call  StrCmpToken
+    pop   rdi
+    cmp   rax, 0
+    je    .do_clear
+
     ; Compare with "help"
     push  rdi
     mov   rsi, CMD_HELP
@@ -204,6 +212,16 @@ ParseCommand:
     je    .done_run
     call  FakeLoadAndStartImage
 .done_run:
+    xor   rax, rax
+    pop   rbx
+    ret
+
+.do_clear:
+    mov   rax, [SystemTablePtr]
+    mov   r8,  [rax + EFI_SYSTEM_TABLE_ConOut]
+    mov   rcx, r8
+    mov   rdx, 0  ; Clear screen
+    call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_ClearScreen]
     xor   rax, rax
     pop   rbx
     ret
@@ -526,6 +544,7 @@ CMD_ECHO        db "echo",0
 CMD_REBOOT      db "reboot",0
 CMD_RUN         db "run",0
 CMD_HELP        db "help",0
+CMD_CLEAR       db "clear",0
 
 InputBuffer     times 128 db 0
 CharBuf         times 4   db 0
@@ -537,6 +556,7 @@ CmdHistoryIndex db 0
 HelpText db "Available commands:",13,10
          db "  help   - Show this help",13,10
          db "  echo   - Display text",13,10
+         db "  clear  - Clear the screen",13,10
          db "  reboot - Restart system",13,10
          db "  run    - Execute program",13,10,0
 
