@@ -49,6 +49,48 @@ MainLoop:
     ; Read line -> parse
     mov   rdi, InputBuffer
     call  ReadLine
+
+    ; Check if command is not empty
+    cmp   byte [InputBuffer], 0
+    je    .skip_history
+    
+    ; Store command in history
+    movzx rcx, byte [CmdHistoryCount]
+    cmp   rcx, 5
+    jae   .shift_history
+    inc   byte [CmdHistoryCount]
+    
+.shift_history:
+    ; Shift history entries
+    mov   rcx, 4
+.shift_loop:
+    test  rcx, rcx
+    jz    .copy_current
+    mov   rsi, rcx
+    dec   rsi
+    imul  rsi, 128
+    lea   rsi, [CmdHistory + rsi]
+    mov   rdi, rcx
+    imul  rdi, 128
+    lea   rdi, [CmdHistory + rdi]
+    push  rcx
+    mov   rcx, 128
+    rep   movsb
+    pop   rcx
+    dec   rcx
+    jmp   .shift_loop
+    
+.copy_current:
+    ; Copy current command to history[0]
+    mov   rsi, InputBuffer
+    mov   rdi, CmdHistory
+    mov   rcx, 128
+    rep   movsb
+    
+.skip_history:
+    ; Continue with command parsing
+    mov   rdi, InputBuffer
+
     call  ParseCommand
     cmp   rax, 0
     je    .done
