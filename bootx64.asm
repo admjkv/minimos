@@ -157,6 +157,14 @@ ParseCommand:
     cmp   rax, 0
     je    .do_help
 
+    ; Compare with "version"
+    push  rdi
+    mov   rsi, CMD_VERSION
+    call  StrCmpToken
+    pop   rdi
+    cmp   rax, 0
+    je    .do_version
+
     ; Unrecognized
     mov   rax, [SystemTablePtr]
     mov   rax, [rax + EFI_SYSTEM_TABLE_ConOut]
@@ -247,6 +255,18 @@ ParseCommand:
     ; Check for error
     test  rax, rax
     js    ErrorHandler
+    xor   rax, rax
+    pop   rbx
+    ret
+
+.do_version:
+    mov   rax, [SystemTablePtr]
+    mov   r8,  [rax + EFI_SYSTEM_TABLE_ConOut]
+    mov   rcx, r8
+    mov   rdi, VersionStr
+    call  ConvertAsciiToUtf16
+    mov   rdx, rax
+    call  [r8 + EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_OutputString]
     xor   rax, rax
     pop   rbx
     ret
@@ -735,6 +755,7 @@ CMD_REBOOT      db "reboot",0
 CMD_RUN         db "run",0
 CMD_HELP        db "help",0
 CMD_CLEAR       db "clear",0
+CMD_VERSION     db "version",0
 
 InputBuffer     times 128 db 0
 CharBuf         times 4   db 0
@@ -751,6 +772,7 @@ HelpText db "Available commands:",13,10
          db "  run    - Execute program",13,10,0
 
 RunErrorStr     db "Error: Missing program name",13,10,0
+VersionStr      db "MinimOS v0.1",13,10,0
 
 section .bss align=8
 WideBuf   resb 1024
