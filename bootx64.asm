@@ -640,6 +640,11 @@ AttemptCompletion:
     call  TryComplete
     cmp   rax, 1
     je    .found_completion
+
+    mov   rdx, CMD_VERSION
+    call  TryComplete
+    cmp   rax, 1
+    je    .found_completion
     
 .no_match:
     xor   rax, rax
