@@ -765,11 +765,12 @@ CmdHistoryCount db 0
 CmdHistoryIndex db 0
 
 HelpText db "Available commands:",13,10
-         db "  help   - Show this help",13,10
-         db "  echo   - Display text",13,10
-         db "  clear  - Clear the screen",13,10
-         db "  reboot - Restart system",13,10
-         db "  run    - Execute program",13,10,0
+         db "  help    - Show this help",13,10
+         db "  echo    - Display text",13,10
+         db "  clear   - Clear the screen",13,10
+         db "  reboot  - Restart system",13,10
+         db "  run     - Execute program",13,10
+         db "  version - Show OS version",13,10,0
 
 RunErrorStr     db "Error: Missing program name",13,10,0
 VersionStr      db "MinimOS v0.1",13,10,0
